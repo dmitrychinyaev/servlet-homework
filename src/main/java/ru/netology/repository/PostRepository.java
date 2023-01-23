@@ -3,37 +3,44 @@ package ru.netology.repository;
 import ru.netology.model.Post;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 // Stub
 public class PostRepository {
-  CopyOnWriteArrayList<Post> postsList;
+  private ConcurrentHashMap<Long, Post> postsMap;
+  private final AtomicLong idCounter;
+
+  public PostRepository() {
+    idCounter = new AtomicLong(0);
+  }
 
   public List<Post> all() {
-    return new ArrayList<>(postsList);
+    return new ArrayList<>(postsMap.values());
   }
 
   public Optional<Post> getById(long id) {
-    return Optional.ofNullable(postsList.get((int) id));
+    return Optional.ofNullable(postsMap.get(id));
   }
 
   public Post save(Post post) {
-    if (post.getId()==0 && postsList.size()==0){
-      postsList.add(1,post);
+    if (post.getId()==0 && postsMap.size()==0){
+      idCounter.getAndIncrement();
+      postsMap.put(idCounter.get(),post);
     }
-    if (post.getId()==0 && postsList.size() > 0 || post.getId() > postsList.size()){
-      postsList.add(postsList.size() + 1,post);
+    if (post.getId()==0 && postsMap.size() > 0 || post.getId() > postsMap.size()){
+      idCounter.getAndIncrement();
+      postsMap.put(idCounter.get(),post);
     }
-    if (post.getId() == postsList.get((int) post.getId()).getId()){
-      postsList.get((int) post.getId()).setContent(post.getContent());
+    if (postsMap.containsKey(post.getId())){
+      postsMap.replace(post.getId(),post);
     }
     return post;
   }
 
   public void removeById(long id) {
-    postsList.remove((int)id);
+    postsMap.remove(id);
   }
 }
